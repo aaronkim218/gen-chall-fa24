@@ -71,6 +71,7 @@ func getAndStoreIMDBData(ids []string) []*Movie {
 		}
 
 		movie := Movie{
+			ID:             id,
 			Title:          imdbResp.Title,
 			Year:           year,
 			Rated:          imdbResp.Rated,

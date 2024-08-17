@@ -1,6 +1,7 @@
 package main
 
 type Movie struct {
+	ID             string
 	Title          string
 	Year           uint
 	Rated          string

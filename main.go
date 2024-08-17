@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -61,10 +62,10 @@ func main() {
 		}
 	}
 
-	slices.SortFunc(movies, getCompMoviesFunc(chall.Prompt.People))
+	slices.SortFunc(movies, getCmpMoviesFunc(chall.Prompt.People))
 
 	for _, movie := range movies {
-		log.Printf("%s\n", movie.Title)
+		fmt.Printf("\"%s\",\n", movie.ID)
 	}
 }
 
