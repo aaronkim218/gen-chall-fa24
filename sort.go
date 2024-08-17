@@ -2,7 +2,6 @@ package main
 
 import (
 	"cmp"
-	"fmt"
 	"log"
 	"reflect"
 	"regexp"
@@ -41,8 +40,14 @@ func calcProp(movie *Movie, person *Person) float32 {
 	v := reflect.ValueOf(person.Preferences).Elem()
 
 	for i := 0; i < v.NumField(); i++ {
-		pref := v.Field(i).Interface()
-		fmt.Println("Kind:", v.Kind())
+		val := v.Field(i)
+
+		if val.IsNil() {
+			continue
+		}
+
+		pref := val.Interface()
+
 		sat := float32(0)
 
 		switch t.Field(i).Name {
@@ -127,17 +132,17 @@ func calcRuntime(runtime string) float32 {
 	re := regexp.MustCompile(`(\d+)h(\d+)m(\d+)s`)
 	matches := re.FindStringSubmatch(runtime)
 
-	hrs, err := strconv.Atoi(matches[0])
+	hrs, err := strconv.Atoi(matches[1])
 	if err != nil {
 		log.Fatalf("Error parsing hours: %v", err)
 	}
 
-	mins, err := strconv.Atoi(matches[1])
+	mins, err := strconv.Atoi(matches[2])
 	if err != nil {
 		log.Fatalf("Error parsing minutes: %v", err)
 	}
 
-	secs, err := strconv.Atoi(matches[2])
+	secs, err := strconv.Atoi(matches[3])
 	if err != nil {
 		log.Fatalf("Error parsing seconds: %v", err)
 	}
