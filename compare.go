@@ -15,7 +15,7 @@ func getCmpMoviesFunc(people []*Person) func(*Movie, *Movie) int {
 		med1 := calcMedProp(movie1, people)
 		med2 := calcMedProp(movie2, people)
 
-		return -1 * cmp.Compare(med1, med2)
+		return cmp.Compare(med1, med2)
 	}
 }
 
@@ -54,94 +54,100 @@ func calcProp(movie *Movie, person *Person) float32 {
 			continue
 		}
 
-		pref := val.Interface()
-
-		var sat float32
-		var weight uint
-
-		switch t.Field(i).Name {
-		case "AfterYearInclusive":
-			p := pref.(*Preference[uint])
-			if isAfterYearInclusive(movie.Year, p.Value) {
-				sat = float32(p.Weight)
-			} else {
-				sat = -1 * float32(p.Weight)
-			}
-			weight = p.Weight
-		case "BeforeYearExclusive":
-			p := pref.(*Preference[uint])
-			if isBeforeYearExclusive(movie.Year, p.Value) {
-				sat = float32(p.Weight)
-			} else {
-				sat = -1 * float32(p.Weight)
-			}
-			weight = p.Weight
-		case "MaximumAgeRatingInclusive":
-			p := pref.(*Preference[string])
-			if isMaximumAgeRatingInclusive(movie.Rated, p.Value) {
-				sat = float32(p.Weight)
-			} else {
-				sat = -1 * float32(p.Weight)
-			}
-			weight = p.Weight
-		case "ShorterThanExclusive":
-			p := pref.(*Preference[string])
-			if isShorterThanExclusive(movie.Runtime, p.Value) {
-				sat = float32(p.Weight)
-			} else {
-				sat = -1 * float32(p.Weight)
-			}
-			weight = p.Weight
-		case "FavoriteGenre":
-			p := pref.(*Preference[string])
-			if isFavoriteGenre(movie.Genres, p.Value) {
-				sat = float32(p.Weight)
-			} else {
-				sat = -1 * float32(p.Weight)
-			}
-			weight = p.Weight
-		case "LeastFavoriteDirector":
-			// maybe just penalize if present and not reward if not present -- consider this method for others
-			p := pref.(*Preference[string])
-			if isLeastFavoriteDirector(movie.Director, p.Value) {
-				sat = -1 * float32(p.Weight)
-			} else {
-				sat = float32(p.Weight)
-			}
-			weight = p.Weight
-		case "FavoriteActors":
-			p := pref.(*Preference[[]string])
-			ratio := ratioFavoriteActors(movie.Actors, p.Value)
-			if ratio > 0 {
-				sat = ratio * float32(p.Weight)
-			} else {
-				sat = -1 * float32(p.Weight)
-			}
-			weight = p.Weight
-		case "FavoritePlotElements":
-			p := pref.(*Preference[[]string])
-			ratio := ratioFavoritePlotElements(movie.Plot, p.Value)
-			if ratio > 0 {
-				sat = ratio * float32(p.Weight)
-			} else {
-				sat = -1 * float32(p.Weight)
-			}
-			weight = p.Weight
-		case "MinimumRottenTomatoesScoreInclusive":
-			p := pref.(*Preference[uint])
-			if isMinimumRottenTomatoesScoreInclusive(movie.RottenTomatoes, p.Value) {
-				sat = float32(p.Weight)
-			} else {
-				sat = -1 * float32(p.Weight)
-			}
-			weight = p.Weight
-		}
-
+		sat, weight := calcSat(t.Field(i).Name, &val, movie)
 		totalSat += sat
 		totalWeight += weight
 	}
 
 	return (float32(totalSat) + float32(totalWeight)) / (2 * float32(totalWeight))
+}
+
+// calculate satisfaction given preference name, preference, and movie
+func calcSat(name string, val *reflect.Value, movie *Movie) (float32, uint) {
+	pref := val.Interface()
+
+	var sat float32
+	var weight uint
+
+	switch name {
+	case "AfterYearInclusive":
+		p := pref.(*Preference[uint])
+		if isAfterYearInclusive(movie.Year, p.Value) {
+			sat = float32(p.Weight)
+		} else {
+			sat = -1 * float32(p.Weight)
+		}
+		weight = p.Weight
+	case "BeforeYearExclusive":
+		p := pref.(*Preference[uint])
+		if isBeforeYearExclusive(movie.Year, p.Value) {
+			sat = float32(p.Weight)
+		} else {
+			sat = -1 * float32(p.Weight)
+		}
+		weight = p.Weight
+	case "MaximumAgeRatingInclusive":
+		p := pref.(*Preference[string])
+		if isMaximumAgeRatingInclusive(movie.Rated, p.Value) {
+			sat = float32(p.Weight)
+		} else {
+			sat = -1 * float32(p.Weight)
+		}
+		weight = p.Weight
+	case "ShorterThanExclusive":
+		p := pref.(*Preference[string])
+		if isShorterThanExclusive(movie.Runtime, p.Value) {
+			sat = float32(p.Weight)
+		} else {
+			sat = -1 * float32(p.Weight)
+		}
+		weight = p.Weight
+	case "FavoriteGenre":
+		p := pref.(*Preference[string])
+		if isFavoriteGenre(movie.Genres, p.Value) {
+			sat = float32(p.Weight)
+		} else {
+			sat = -1 * float32(p.Weight)
+		}
+		weight = p.Weight
+	case "LeastFavoriteDirector":
+		// maybe just penalize if present and not reward if not present -- consider this method for others
+		p := pref.(*Preference[string])
+		if isLeastFavoriteDirector(movie.Director, p.Value) {
+			sat = -1 * float32(p.Weight)
+		} else {
+			sat = float32(p.Weight)
+		}
+		weight = p.Weight
+	case "FavoriteActors":
+		p := pref.(*Preference[[]string])
+		ratio := ratioFavoriteActors(movie.Actors, p.Value)
+		if ratio > 0 {
+			sat = ratio * float32(p.Weight)
+		} else {
+			sat = -1 * float32(p.Weight)
+		}
+		weight = p.Weight
+	case "FavoritePlotElements":
+		p := pref.(*Preference[[]string])
+		ratio := ratioFavoritePlotElements(movie.Plot, p.Value)
+		if ratio > 0 {
+			sat = ratio * float32(p.Weight)
+		} else {
+			sat = -1 * float32(p.Weight)
+		}
+		weight = p.Weight
+	case "MinimumRottenTomatoesScoreInclusive":
+		p := pref.(*Preference[uint])
+		if isMinimumRottenTomatoesScoreInclusive(movie.RottenTomatoes, p.Value) {
+			sat = float32(p.Weight)
+		} else {
+			sat = -1 * float32(p.Weight)
+		}
+		weight = p.Weight
+	}
+
+	return sat, weight
 }
 
 func isAfterYearInclusive(movieYear, prefYear uint) bool {

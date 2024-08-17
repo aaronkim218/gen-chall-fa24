@@ -63,6 +63,9 @@ func main() {
 	}
 
 	slices.SortFunc(movies, getCmpMoviesFunc(chall.Prompt.People))
+	// movies sorted in order of ascending median prop satisfaction
+	// so need to reverse
+	slices.Reverse(movies)
 
 	for _, movie := range movies {
 		fmt.Printf("\"%s\",\n", movie.ID)
@@ -84,3 +87,15 @@ func main() {
 // comparator function should compare average satisfaction
 // get proportion of satisfaction for each person and then calculate average
 // movie with higher average satisfaction is better
+
+// TRY THIS ONE
+// "tt0058150",
+// "tt0432283",
+// "tt22022452",
+// "tt0112384",
+// "tt0264464",
+// "tt1074638",
+// "tt1285016",
+// "tt3783958",
+// "tt2582802",
+// "tt2084970",
