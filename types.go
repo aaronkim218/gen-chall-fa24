@@ -11,6 +11,8 @@ type Movie struct {
 	Actors         []string
 	Plot           string
 	RottenTomatoes uint // percent
+	MedProp        float64
+	AvgProp        float64
 }
 
 type IMDBResponse struct {
@@ -60,4 +62,28 @@ type Preferences struct {
 type Preference[T any] struct {
 	Value  T    `json:"value"`
 	Weight uint `json:"weight"`
+}
+
+type B struct {
+	MAX_YEAR           uint
+	MIN_YEAR           uint
+	MIN_RUNTIME        uint
+	MIN_ROTTENTOMATOES uint
+	MIN_RATING         uint
+}
+
+var Bounds = B{
+	MAX_YEAR:           2024,
+	MIN_YEAR:           1888,
+	MIN_RUNTIME:        0,
+	MIN_ROTTENTOMATOES: 0,
+	MIN_RATING:         0,
+}
+
+var RATINGS = map[string]uint{
+	"G":     0,
+	"PG":    1,
+	"PG-13": 2,
+	"R":     3,
+	"NC-17": 4,
 }

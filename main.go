@@ -63,12 +63,9 @@ func main() {
 	}
 
 	slices.SortFunc(movies, getCmpMoviesFunc(chall.Prompt.People))
-	// movies sorted in order of ascending median prop satisfaction
-	// so need to reverse
-	slices.Reverse(movies)
 
 	for _, movie := range movies {
-		fmt.Printf("\"%s\",\n", movie.ID)
+		fmt.Printf("\"%s\" --- med: %v, avg: %v\n", movie.ID, movie.MedProp, movie.AvgProp)
 	}
 }
 
