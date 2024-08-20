@@ -13,6 +13,8 @@ type Movie struct {
 	RottenTomatoes uint // percent
 	MedProp        float64
 	AvgProp        float64
+	Points         uint
+	PointsV2       float64
 }
 
 type IMDBResponse struct {
@@ -69,7 +71,7 @@ type B struct {
 	MIN_YEAR           uint
 	MIN_RUNTIME        uint
 	MIN_ROTTENTOMATOES uint
-	MIN_RATING         uint
+	MAX_RATING         uint
 }
 
 var Bounds = B{
@@ -77,7 +79,7 @@ var Bounds = B{
 	MIN_YEAR:           1888,
 	MIN_RUNTIME:        0,
 	MIN_ROTTENTOMATOES: 0,
-	MIN_RATING:         0,
+	MAX_RATING:         4,
 }
 
 var RATINGS = map[string]uint{

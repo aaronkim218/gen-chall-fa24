@@ -64,8 +64,26 @@ func main() {
 
 	slices.SortFunc(movies, getCmpMoviesFunc(chall.Prompt.People))
 
+	fmt.Printf("V1:\n")
 	for _, movie := range movies {
-		fmt.Printf("\"%s\" --- med: %v, avg: %v\n", movie.ID, movie.MedProp, movie.AvgProp)
+		fmt.Printf("\"%s\",\n", movie.ID)
+	}
+
+	// function that fills movies with points
+	calcPoints(movies, chall.Prompt.People)
+
+	slices.SortFunc(movies, cmpMoviesV2)
+	fmt.Printf("V2:\n")
+	for _, movie := range movies {
+		fmt.Printf("\"%s\",\n", movie.ID)
+	}
+
+	calcPointsV2(movies, chall.Prompt.People)
+
+	slices.SortFunc(movies, cmpMoviesV3)
+	fmt.Printf("V3:\n")
+	for _, movie := range movies {
+		fmt.Printf("\"%s\", - %v\n", movie.ID, movie.PointsV2)
 	}
 }
 
