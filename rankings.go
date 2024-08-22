@@ -11,7 +11,7 @@ import (
 
 // iterate through movies and set score for each movie by iterating through people
 // and calculating each person's score for movie and accumulating
-func calcScore(movies []*Movie, people []*Person) {
+func calcScores(movies []*Movie, people []*Person) {
 	var wg sync.WaitGroup
 
 	for _, movie := range movies {

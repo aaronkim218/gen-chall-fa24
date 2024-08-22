@@ -17,6 +17,7 @@ func main() {
 		log.Fatalf("Error loading .env: %v", err)
 	}
 
+	// load response from file
 	file, err := os.Open("response.json")
 	if err != nil {
 		log.Fatalf("Error opening response.json: %v", err)
@@ -62,8 +63,10 @@ func main() {
 		}
 	}
 
-	calcScore(movies, chall.Prompt.People)
+	// assign scores to all movies based on people preferences
+	calcScores(movies, chall.Prompt.People)
 
+	// sort movies by score in descending order
 	slices.SortFunc(movies, func(a, b *Movie) int { return int(b.Score - a.Score) })
 	for _, movie := range movies {
 		fmt.Printf("\"%s\",\n", movie.ID)
