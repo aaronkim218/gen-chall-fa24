@@ -62,34 +62,10 @@ func main() {
 		}
 	}
 
-	slices.SortFunc(movies, getCmpMoviesFunc(chall.Prompt.People))
-
-	fmt.Printf("V1:\n")
-	for _, movie := range movies {
-		fmt.Printf("\"%s\",\n", movie.ID)
-	}
-
 	calcPoints(movies, chall.Prompt.People)
 
 	slices.SortFunc(movies, func(a, b *Movie) int { return int(b.PointsV3 - a.PointsV3) })
-	fmt.Printf("V2:\n")
 	for _, movie := range movies {
 		fmt.Printf("\"%s\",\n", movie.ID)
 	}
 }
-
-// see how much each movie satisfies each person
-// satisfying 1st pref is better than satisfying 2nd pref
-// p1 - m1 satisfies 1st 2nd 4th pref
-// p2 - m1 satisfies 4th pref
-// p1 - m2 satisfies 2nd 3rd 4th pref
-// p2 - m2 staisfies 4th pref
-// movie 1 has higher satisfaction because satisfying 1st pref vs 3rd pref for p1 is better. everything else same
-// but how to compare people that have different number of prefs? e.g. 4 pref vs 7
-
-// nvm just go by weight
-// comparator function should compare total weights of satisfied preferences
-// could also calculate total weight of preference satisfaction per person and divide by total weight so i get proportion of satisfaction
-// comparator function should compare average satisfaction
-// get proportion of satisfaction for each person and then calculate average
-// movie with higher average satisfaction is better
