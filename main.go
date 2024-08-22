@@ -62,9 +62,9 @@ func main() {
 		}
 	}
 
-	calcPoints(movies, chall.Prompt.People)
+	calcScore(movies, chall.Prompt.People)
 
-	slices.SortFunc(movies, func(a, b *Movie) int { return int(b.PointsV3 - a.PointsV3) })
+	slices.SortFunc(movies, func(a, b *Movie) int { return int(b.Score - a.Score) })
 	for _, movie := range movies {
 		fmt.Printf("\"%s\",\n", movie.ID)
 	}

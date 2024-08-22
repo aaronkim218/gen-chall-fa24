@@ -9,7 +9,9 @@ import (
 	"sync/atomic"
 )
 
-func calcPoints(movies []*Movie, people []*Person) {
+// iterate through movies and set score for each movie by iterating through people
+// and calculating each person's score for movie and accumulating
+func calcScore(movies []*Movie, people []*Person) {
 	var wg sync.WaitGroup
 
 	for _, movie := range movies {
@@ -18,7 +20,7 @@ func calcPoints(movies []*Movie, people []*Person) {
 
 			go func(m *Movie, p *Person) {
 				defer wg.Done()
-				atomic.AddInt64(&m.PointsV3, int64(score(m, p)))
+				atomic.AddInt64(&m.Score, int64(score(m, p)))
 			}(movie, person)
 		}
 	}
@@ -26,6 +28,7 @@ func calcPoints(movies []*Movie, people []*Person) {
 	wg.Wait()
 }
 
+// calculate person's score for movie based on satisfied preferences
 func score(movie *Movie, person *Person) int {
 	total := 0
 
