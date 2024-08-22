@@ -307,7 +307,7 @@ func TestCalcDiffPenalty(t *testing.T) {
 	}
 }
 
-func TestCalcSatV2(t *testing.T) {
+func TestScore(t *testing.T) {
 	goodMovie := Movie{
 		ID:             "good",
 		Title:          "Good Movie",
@@ -341,56 +341,64 @@ func TestCalcSatV2(t *testing.T) {
 		Plot:   "this is a movie about love",
 	}
 
-	prefs := Preferences{
-		AfterYearInclusive:                  &Preference[uint]{Value: 2000, Weight: 10},
-		BeforeYearExclusive:                 &Preference[uint]{Value: 2010, Weight: 10},
-		MaximumAgeRatingInclusive:           &Preference[string]{Value: "PG-13", Weight: 10},
-		ShorterThanExclusive:                &Preference[string]{Value: "1h45m0s", Weight: 10},
-		FavoriteGenre:                       &Preference[string]{Value: "Action", Weight: 10},
+	prefs1 := Preferences{
+		AfterYearInclusive:        &Preference[uint]{Value: 2000, Weight: 10},
+		MaximumAgeRatingInclusive: &Preference[string]{Value: "PG-13", Weight: 10},
+	}
+
+	prefs2 := Preferences{
+		ShorterThanExclusive: &Preference[string]{Value: "1h45m0s", Weight: 10},
+		FavoriteGenre:        &Preference[string]{Value: "Action", Weight: 10},
+	}
+
+	prefs3 := Preferences{
 		LeastFavoriteDirector:               &Preference[string]{Value: "Ridley Scott", Weight: 10},
 		FavoriteActors:                      &Preference[[]string]{Value: []string{"Chris Evans", "Josh Brolin"}, Weight: 10},
 		FavoritePlotElements:                &Preference[[]string]{Value: []string{"love", "family"}, Weight: 10},
 		MinimumRottenTomatoesScoreInclusive: &Preference[uint]{Value: 70, Weight: 10},
 	}
 
+	prefsBadMovieBeforeYearExclusive := Preferences{
+		BeforeYearExclusive: &Preference[uint]{Value: 2010, Weight: 10},
+	}
+
+	person1 := Person{
+		Preferences: &prefs1,
+	}
+
+	person2 := Person{
+		Preferences: &prefs2,
+	}
+
+	person3 := Person{
+		Preferences: &prefs3,
+	}
+
+	personBadMovieBeforeYearExclusive := Person{
+		Preferences: &prefsBadMovieBeforeYearExclusive,
+	}
+
 	tests := []struct {
-		prefName    string
-		prefVal     reflect.Value
-		movie       *Movie
-		expectedOk  bool
-		expectedSat float64
+		movie    *Movie
+		person   *Person
+		expected int
 	}{
 		// good movie
-		{prefName: "AfterYearInclusive", prefVal: reflect.ValueOf(prefs.AfterYearInclusive), movie: &goodMovie, expectedOk: true, expectedSat: 10},
-		{prefName: "BeforeYearExclusive", prefVal: reflect.ValueOf(prefs.BeforeYearExclusive), movie: &goodMovie, expectedOk: true, expectedSat: 10},
-		{prefName: "MaximumAgeRatingInclusive", prefVal: reflect.ValueOf(prefs.MaximumAgeRatingInclusive), movie: &goodMovie, expectedOk: true, expectedSat: 10},
-		{prefName: "ShorterThanExclusive", prefVal: reflect.ValueOf(prefs.ShorterThanExclusive), movie: &goodMovie, expectedOk: true, expectedSat: 10},
-		{prefName: "FavoriteGenre", prefVal: reflect.ValueOf(prefs.FavoriteGenre), movie: &goodMovie, expectedOk: true, expectedSat: 10},
-		{prefName: "LeastFavoriteDirector", prefVal: reflect.ValueOf(prefs.LeastFavoriteDirector), movie: &goodMovie, expectedOk: true, expectedSat: 10},
-		{prefName: "FavoriteActors", prefVal: reflect.ValueOf(prefs.FavoriteActors), movie: &goodMovie, expectedOk: true, expectedSat: 10},
-		{prefName: "FavoritePlotElements", prefVal: reflect.ValueOf(prefs.FavoritePlotElements), movie: &goodMovie, expectedOk: true, expectedSat: 10},
-		{prefName: "MinimumRottenTomatoesScoreInclusive", prefVal: reflect.ValueOf(prefs.MinimumRottenTomatoesScoreInclusive), movie: &goodMovie, expectedOk: true, expectedSat: 10},
+		{movie: &goodMovie, person: &person1, expected: 20},
+		{movie: &goodMovie, person: &person2, expected: 20},
+		{movie: &goodMovie, person: &person3, expected: 50},
+
 		// bad movie
-		{prefName: "AfterYearInclusive", prefVal: reflect.ValueOf(prefs.AfterYearInclusive), movie: &badMovie, expectedOk: false, expectedSat: 0},
-		{prefName: "BeforeYearExclusive", prefVal: reflect.ValueOf(prefs.BeforeYearExclusive), movie: &badMovieBeforeYearExclusive, expectedOk: false, expectedSat: 0},
-		{prefName: "MaximumAgeRatingInclusive", prefVal: reflect.ValueOf(prefs.MaximumAgeRatingInclusive), movie: &badMovie, expectedOk: false, expectedSat: 0},
-		{prefName: "ShorterThanExclusive", prefVal: reflect.ValueOf(prefs.ShorterThanExclusive), movie: &badMovie, expectedOk: false, expectedSat: 0},
-		{prefName: "FavoriteGenre", prefVal: reflect.ValueOf(prefs.FavoriteGenre), movie: &badMovie, expectedOk: false, expectedSat: 0},
-		{prefName: "LeastFavoriteDirector", prefVal: reflect.ValueOf(prefs.LeastFavoriteDirector), movie: &badMovie, expectedOk: false, expectedSat: 0},
-		{prefName: "FavoriteActors", prefVal: reflect.ValueOf(prefs.FavoriteActors), movie: &badMovie, expectedOk: false, expectedSat: 0},
-		{prefName: "FavoritePlotElements", prefVal: reflect.ValueOf(prefs.FavoritePlotElements), movie: &badMovie, expectedOk: false, expectedSat: 0},
-		{prefName: "MinimumRottenTomatoesScoreInclusive", prefVal: reflect.ValueOf(prefs.MinimumRottenTomatoesScoreInclusive), movie: &badMovie, expectedOk: false, expectedSat: 0},
-		// partial movie
-		{prefName: "FavoriteActors", prefVal: reflect.ValueOf(prefs.FavoriteActors), movie: &partialMovie, expectedOk: true, expectedSat: 5},
-		{prefName: "FavoritePlotElements", prefVal: reflect.ValueOf(prefs.FavoritePlotElements), movie: &partialMovie, expectedOk: true, expectedSat: 5},
+		{movie: &badMovie, person: &person1, expected: 0},
+		{movie: &badMovie, person: &person2, expected: 0},
+		{movie: &badMovie, person: &person3, expected: -10},
+		{movie: &badMovieBeforeYearExclusive, person: &personBadMovieBeforeYearExclusive, expected: 0},
+
+		// partial
+		{movie: &partialMovie, person: &person3, expected: 20},
 	}
 
 	for _, test := range tests {
-		ok, sat := calcSatV2(test.prefName, &test.prefVal, test.movie)
-		if test.expectedOk == false {
-			assert.Equal(t, false, ok)
-		} else {
-			assert.Equal(t, test.expectedSat, sat)
-		}
+		assert.Equal(t, test.expected, score(test.movie, test.person))
 	}
 }

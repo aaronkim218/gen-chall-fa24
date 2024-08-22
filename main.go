@@ -69,21 +69,12 @@ func main() {
 		fmt.Printf("\"%s\",\n", movie.ID)
 	}
 
-	// function that fills movies with points
 	calcPoints(movies, chall.Prompt.People)
 
-	slices.SortFunc(movies, cmpMoviesV2)
+	slices.SortFunc(movies, func(a, b *Movie) int { return int(b.PointsV3 - a.PointsV3) })
 	fmt.Printf("V2:\n")
 	for _, movie := range movies {
 		fmt.Printf("\"%s\",\n", movie.ID)
-	}
-
-	calcPointsV2(movies, chall.Prompt.People)
-
-	slices.SortFunc(movies, cmpMoviesV3)
-	fmt.Printf("V3:\n")
-	for _, movie := range movies {
-		fmt.Printf("\"%s\", - %v\n", movie.ID, movie.PointsV2)
 	}
 }
 

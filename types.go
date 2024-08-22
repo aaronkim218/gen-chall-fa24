@@ -15,6 +15,7 @@ type Movie struct {
 	AvgProp        float64
 	Points         uint
 	PointsV2       float64
+	PointsV3       int64
 }
 
 type IMDBResponse struct {

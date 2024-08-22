@@ -9,6 +9,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 )
 
 func getCmpMoviesFunc(people []*Person) func(*Movie, *Movie) int {
@@ -302,129 +304,82 @@ func calcDiffPenalty(actual, pref, bound, weight float64) float64 {
 	return -1 * float64(weight) * ((math.Abs(float64(actual) - float64(pref))) / (math.Abs(float64(bound) - float64(pref))))
 }
 
-/////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////
 // V2
-// create an optimal movie ranking for each person
-// give points based on index in array. 0th index 0 pts, 1st index 1 pt, etc
-// points are bad
-// sort by least points
 
-func cmpMoviesV2(a, b *Movie) int {
-	return cmp.Compare(a.Points, b.Points)
-}
-
-// this function should mutate all movies and give them points
 func calcPoints(movies []*Movie, people []*Person) {
-	for _, person := range people {
-		ranking := rank(movies, person)
-
-		for i, movie := range ranking {
-			movie.Points += uint(i)
-		}
-	}
-}
-
-func rank(movies []*Movie, person *Person) []*Movie {
-	scores := make(map[*Movie]float64)
+	var wg sync.WaitGroup
 
 	for _, movie := range movies {
-		scores[movie] = score(movie, person)
+		for _, person := range people {
+			wg.Add(1)
+
+			go func(m *Movie, p *Person) {
+				defer wg.Done()
+				atomic.AddInt64(&m.PointsV3, int64(score(m, p)))
+			}(movie, person)
+		}
 	}
 
-	slices.SortFunc(movies, func(a, b *Movie) int { return -1 * cmp.Compare(scores[a], scores[b]) })
-
-	return movies
+	wg.Wait()
 }
 
-func score(movie *Movie, person *Person) float64 {
-	total := float64(0)
-	t := reflect.TypeOf(person.Preferences).Elem()
-	v := reflect.ValueOf(person.Preferences).Elem()
+func score(movie *Movie, person *Person) int {
+	total := 0
 
-	for i := 0; i < v.NumField(); i++ {
-		val := v.Field(i)
-
-		if val.IsNil() {
-			continue
+	if person.Preferences.AfterYearInclusive != nil {
+		if movie.Year >= person.Preferences.AfterYearInclusive.Value {
+			total += int(person.Preferences.AfterYearInclusive.Weight)
 		}
+	}
 
-		if ok, sat := calcSatV2(t.Field(i).Name, &val, movie); ok {
-			total += sat
+	if person.Preferences.BeforeYearExclusive != nil {
+		if movie.Year < person.Preferences.BeforeYearExclusive.Value {
+			total += int(person.Preferences.BeforeYearExclusive.Weight)
+		}
+	}
+
+	if person.Preferences.MaximumAgeRatingInclusive != nil {
+		if RATINGS[movie.Rated] <= RATINGS[person.Preferences.MaximumAgeRatingInclusive.Value] {
+			total += int(person.Preferences.MaximumAgeRatingInclusive.Weight)
+		}
+	}
+
+	if person.Preferences.ShorterThanExclusive != nil {
+		if movie.Runtime < uint(calcRuntime(person.Preferences.ShorterThanExclusive.Value)) {
+			total += int(person.Preferences.ShorterThanExclusive.Weight)
+		}
+	}
+
+	if person.Preferences.FavoriteGenre != nil {
+		if isFavoriteGenre(movie.Genres, person.Preferences.FavoriteGenre.Value) {
+			total += int(person.Preferences.FavoriteGenre.Weight)
+		}
+	}
+
+	if person.Preferences.LeastFavoriteDirector != nil {
+		if movie.Director == person.Preferences.LeastFavoriteDirector.Value {
+			total -= int(person.Preferences.LeastFavoriteDirector.Weight)
+		}
+	}
+
+	if person.Preferences.FavoriteActors != nil {
+		matches := matchesFavoriteActors(movie.Actors, person.Preferences.FavoriteActors.Value)
+		total += int(matches * person.Preferences.FavoriteActors.Weight)
+	}
+
+	if person.Preferences.FavoritePlotElements != nil {
+		matches := matchesFavoritePlotElements(movie.Plot, person.Preferences.FavoritePlotElements.Value)
+		total += int(matches * person.Preferences.FavoritePlotElements.Weight)
+	}
+
+	if person.Preferences.MinimumRottenTomatoesScoreInclusive != nil {
+		if movie.RottenTomatoes >= person.Preferences.MinimumRottenTomatoesScoreInclusive.Value {
+			total += int(person.Preferences.MinimumRottenTomatoesScoreInclusive.Weight)
 		}
 	}
 
 	return total
-}
-
-// returns bool representing if preference is satisfied
-// and uint representing corresponding satisfaction
-func calcSatV2(name string, val *reflect.Value, movie *Movie) (bool, float64) {
-	pref := val.Interface()
-
-	switch name {
-	case "AfterYearInclusive":
-		p := pref.(*Preference[uint])
-		if isAfterYearInclusive(movie.Year, p.Value) {
-			return true, float64(p.Weight)
-		}
-	case "BeforeYearExclusive":
-		p := pref.(*Preference[uint])
-		if isBeforeYearExclusive(movie.Year, p.Value) {
-			return true, float64(p.Weight)
-		}
-	case "MaximumAgeRatingInclusive":
-		p := pref.(*Preference[string])
-		movieRating := RATINGS[movie.Rated]
-		prefRating := RATINGS[p.Value]
-		if isMaximumAgeRatingInclusive(movieRating, prefRating) {
-			return true, float64(p.Weight)
-		}
-	case "ShorterThanExclusive":
-		p := pref.(*Preference[string])
-		prefRuntime := calcRuntime(p.Value)
-		if isShorterThanExclusive(float64(movie.Runtime), prefRuntime) {
-			return true, float64(p.Weight)
-		}
-	case "FavoriteGenre":
-		p := pref.(*Preference[string])
-		if isFavoriteGenre(movie.Genres, p.Value) {
-			return true, float64(p.Weight)
-		}
-	case "LeastFavoriteDirector":
-		p := pref.(*Preference[string])
-		if !isLeastFavoriteDirector(movie.Director, p.Value) {
-			return true, float64(p.Weight)
-		}
-	case "FavoriteActors":
-		p := pref.(*Preference[[]string])
-		matches := matchesFavoriteActors(movie.Actors, p.Value)
-		if matches > 0 {
-			return true, float64(p.Weight) * float64(matches)
-		}
-	case "FavoritePlotElements":
-		p := pref.(*Preference[[]string])
-		matches := matchesFavoritePlotElements(movie.Plot, p.Value)
-		if matches > 0 {
-			return true, float64(p.Weight) * float64(matches)
-		}
-	case "MinimumRottenTomatoesScoreInclusive":
-		p := pref.(*Preference[uint])
-		if isMinimumRottenTomatoesScoreInclusive(movie.RottenTomatoes, p.Value) {
-			return true, float64(p.Weight)
-		}
-	}
-
-	return false, 0
-}
-
-func cmpMoviesV3(a, b *Movie) int {
-	return -1 * cmp.Compare(a.PointsV2, b.PointsV2)
-}
-
-func calcPointsV2(movies []*Movie, people []*Person) {
-	for _, movie := range movies {
-		for _, person := range people {
-			movie.PointsV2 += score(movie, person)
-		}
-	}
 }
