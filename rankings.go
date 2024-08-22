@@ -9,69 +9,6 @@ import (
 	"sync/atomic"
 )
 
-// calculate runtime in minutes
-func calcRuntime(runtime string) float64 {
-	re := regexp.MustCompile(`(\d+)h(\d+)m(\d+)s`)
-	matches := re.FindStringSubmatch(runtime)
-
-	hrs, err := strconv.Atoi(matches[1])
-	if err != nil {
-		log.Fatalf("Error parsing hours: %v", err)
-	}
-
-	mins, err := strconv.Atoi(matches[2])
-	if err != nil {
-		log.Fatalf("Error parsing minutes: %v", err)
-	}
-
-	secs, err := strconv.Atoi(matches[3])
-	if err != nil {
-		log.Fatalf("Error parsing seconds: %v", err)
-	}
-
-	return (60 * float64(hrs)) + float64(mins) + (float64(secs) / 60)
-}
-
-func isFavoriteGenre(movieGenres []string, prefGenre string) bool {
-	for _, genre := range movieGenres {
-		if genre == prefGenre {
-			return true
-		}
-	}
-
-	return false
-}
-
-func matchesFavoriteActors(movieActors, prefActors []string) uint {
-	movieActorsMap := make(map[string]struct{})
-
-	for _, actor := range movieActors {
-		movieActorsMap[actor] = struct{}{}
-	}
-
-	total := uint(0)
-
-	for _, actor := range prefActors {
-		if _, ok := movieActorsMap[actor]; ok {
-			total++
-		}
-	}
-
-	return total
-}
-
-func matchesFavoritePlotElements(moviePlot string, prefPlotElems []string) uint {
-	total := uint(0)
-
-	for _, elem := range prefPlotElems {
-		if strings.Contains(moviePlot, elem) {
-			total++
-		}
-	}
-
-	return total
-}
-
 func calcPoints(movies []*Movie, people []*Person) {
 	var wg sync.WaitGroup
 
@@ -141,6 +78,69 @@ func score(movie *Movie, person *Person) int {
 	if person.Preferences.MinimumRottenTomatoesScoreInclusive != nil {
 		if movie.RottenTomatoes >= person.Preferences.MinimumRottenTomatoesScoreInclusive.Value {
 			total += int(person.Preferences.MinimumRottenTomatoesScoreInclusive.Weight)
+		}
+	}
+
+	return total
+}
+
+// calculate runtime in minutes
+func calcRuntime(runtime string) float64 {
+	re := regexp.MustCompile(`(\d+)h(\d+)m(\d+)s`)
+	matches := re.FindStringSubmatch(runtime)
+
+	hrs, err := strconv.Atoi(matches[1])
+	if err != nil {
+		log.Fatalf("Error parsing hours: %v", err)
+	}
+
+	mins, err := strconv.Atoi(matches[2])
+	if err != nil {
+		log.Fatalf("Error parsing minutes: %v", err)
+	}
+
+	secs, err := strconv.Atoi(matches[3])
+	if err != nil {
+		log.Fatalf("Error parsing seconds: %v", err)
+	}
+
+	return (60 * float64(hrs)) + float64(mins) + (float64(secs) / 60)
+}
+
+func isFavoriteGenre(movieGenres []string, prefGenre string) bool {
+	for _, genre := range movieGenres {
+		if genre == prefGenre {
+			return true
+		}
+	}
+
+	return false
+}
+
+func matchesFavoriteActors(movieActors, prefActors []string) uint {
+	movieActorsMap := make(map[string]struct{})
+
+	for _, actor := range movieActors {
+		movieActorsMap[actor] = struct{}{}
+	}
+
+	total := uint(0)
+
+	for _, actor := range prefActors {
+		if _, ok := movieActorsMap[actor]; ok {
+			total++
+		}
+	}
+
+	return total
+}
+
+func matchesFavoritePlotElements(moviePlot string, prefPlotElems []string) uint {
+	total := uint(0)
+
+	for _, elem := range prefPlotElems {
+		if strings.Contains(moviePlot, elem) {
+			total++
 		}
 	}
 
